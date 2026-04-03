@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAt_EUWY_Y0oJlAe7yuypD2UU0FbPRzP-M",
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "smart-farm-iot-9cbe8.firebaseapp.com",
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "smart-farm-iot-9cbe8",
