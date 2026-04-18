@@ -5,6 +5,8 @@ import {
   updateProfile,
   sendPasswordResetEmail,
   getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { initializeApp, getApps } from "firebase/app";
 import {
@@ -27,6 +29,13 @@ const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@amaranggana.fa
 // ─── AUTH ──────────────────────────────────────────
 export async function loginWithEmail(email: string, password: string) {
   const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+}
+
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  // Set custom parameters or scopes if needed
+  const result = await signInWithPopup(auth, provider);
   return result.user;
 }
 
