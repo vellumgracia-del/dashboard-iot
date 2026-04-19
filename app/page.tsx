@@ -30,6 +30,7 @@ export default function Home() {
     humidity: 0,
     soilMoisture: 0,
     pumpStatus: false,
+    autoMode: false,
   });
 
   const [isConnected, setIsConnected] = useState(false);
@@ -82,10 +83,11 @@ export default function Home() {
             humidity: data.humidity || 0,
             soilMoisture: data.soilMoisture || 0,
             pumpStatus: data.pumpStatus || false,
+            autoMode: data.autoMode || false,
           });
           setIsConnected(true);
         } else {
-          const defaultData = { temperature: 0, humidity: 0, soilMoisture: 0, pumpStatus: false };
+          const defaultData = { temperature: 0, humidity: 0, soilMoisture: 0, pumpStatus: false, autoMode: false };
           setDoc(deviceRef, defaultData);
           setSensorData(defaultData);
           setIsConnected(true);
@@ -124,6 +126,21 @@ export default function Home() {
         await setDoc(deviceRef, { pumpStatus: newStatus }, { merge: true });
       } catch {
         setSensorData((prev) => ({ ...prev, pumpStatus: !newStatus }));
+      }
+    }
+  };
+
+  const handleAutoToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStatus = e.target.checked;
+    setSensorData((prev) => ({ ...prev, autoMode: newStatus }));
+
+    if (activeToken) {
+      try {
+        const databaseRootAppId = process.env.NEXT_PUBLIC_DATABASE_ROOT_APP_ID || "smart-farm";
+        const deviceRef = doc(db, "artifacts", databaseRootAppId, "public", "data", "devices", activeToken);
+        await setDoc(deviceRef, { autoMode: newStatus }, { merge: true });
+      } catch {
+        setSensorData((prev) => ({ ...prev, autoMode: !newStatus }));
       }
     }
   };
@@ -241,7 +258,7 @@ export default function Home() {
 
       <main className="flex-1 px-6 fade-in space-y-6 overflow-y-auto no-scrollbar pb-32">
         {currentTab === "home" && (
-          <HomeTab sensorData={sensorData} activeToken={activeToken} handlePumpToggle={handlePumpToggle} userProfile={userProfile} />
+          <HomeTab sensorData={sensorData} activeToken={activeToken} handlePumpToggle={handlePumpToggle} handleAutoToggle={handleAutoToggle} userProfile={userProfile} />
         )}
         {currentTab === "stats" && <StatsTab activeToken={activeToken} />}
         {currentTab === "system" && <SystemTab activeToken={activeToken} userProfile={userProfile} />}
@@ -281,7 +298,7 @@ export default function Home() {
 // ---------------------------------------------------------
 // TAB: BERANDA (HOME)
 // ---------------------------------------------------------
-function HomeTab({ sensorData, activeToken, handlePumpToggle, userProfile }: any) {
+function HomeTab({ sensorData, activeToken, handlePumpToggle, handleAutoToggle, userProfile }: any) {
   return (
     <>
       {/* User & Org Info */}
@@ -391,9 +408,10 @@ function HomeTab({ sensorData, activeToken, handlePumpToggle, userProfile }: any
         </div>
       </div>
 
-      {/* Kontrol Pompa */}
-      <div className="glass-panel rounded-3xl p-1 mt-6">
-        <div className="relative bg-slate-900/50 rounded-[22px] p-6 flex items-center justify-between border border-slate-800 overflow-hidden">
+      {/* Kontrol Pompa & Mode */}
+      <div className="glass-panel rounded-3xl p-1 mt-6 flex flex-col gap-1">
+        {/* Kontrol Pompa */}
+        <div className="relative bg-slate-900/50 rounded-t-[22px] rounded-b-xl p-6 flex items-center justify-between border border-slate-800 overflow-hidden">
           {sensorData.pumpStatus && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-20">
               <div className="radiation-wave bg-emerald-500/40 w-[200%] h-[200%]"></div>
@@ -411,8 +429,27 @@ function HomeTab({ sensorData, activeToken, handlePumpToggle, userProfile }: any
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer z-10">
-            <input type="checkbox" className="sr-only peer" checked={sensorData.pumpStatus} onChange={handlePumpToggle} />
-            <div className="w-14 h-8 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+            <input type="checkbox" className="sr-only peer" checked={sensorData.pumpStatus} onChange={handlePumpToggle} disabled={sensorData.autoMode} />
+            <div className={`w-14 h-8 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500 shadow-inner ${sensorData.autoMode ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+          </label>
+        </div>
+
+        {/* Mode Otomatis/Manual */}
+        <div className="relative bg-slate-900/50 rounded-b-[22px] rounded-t-xl p-6 flex items-center justify-between border border-slate-800 overflow-hidden">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${sensorData.autoMode ? "bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)]" : "bg-slate-800"}`}>
+              <RefreshCw className={`w-6 h-6 transition-colors duration-500 ${sensorData.autoMode ? "text-white" : "text-slate-400"}`} />
+            </div>
+            <div>
+              <h4 className="font-bold text-lg">Mode Operasi</h4>
+              <p className={`text-sm ${sensorData.autoMode ? "text-blue-400" : "text-amber-400"}`}>
+                Mode: {sensorData.autoMode ? "OTOMATIS" : "MANUAL"}
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer z-10">
+            <input type="checkbox" className="sr-only peer" checked={sensorData.autoMode} onChange={handleAutoToggle} />
+            <div className="w-14 h-8 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500 shadow-inner"></div>
           </label>
         </div>
       </div>
